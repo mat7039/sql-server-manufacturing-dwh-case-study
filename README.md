@@ -1,4 +1,4 @@
-# SQL Server Manufacturing DWH Case Study
+﻿# SQL Server Manufacturing DWH Case Study
 
 End-to-end case study of designing and implementing a SQL Server data warehouse for manufacturing and commercial analytics.
 
@@ -94,74 +94,72 @@ flowchart LR
 
 ## Star Schema View
 
-This is the public, simplified view of the target model. I shaped it to stay close to the original warehouse diagram while still keeping the portfolio version readable:
+The original `dwh.drawio` was a field-level warehouse sketch. For the public GitHub version I kept the same business entities, normalized a few names, and redrew the model in a recruiter-friendly way so it remains readable in Markdown.
+
+Public naming is intentionally slightly cleaner than the source diagram:
+
+| Original draw.io label | Public README label | Why |
+| --- | --- | --- |
+| `custmer_Dim` | `customer_dim` | Fixes the typo without changing the business meaning |
+| `Good_Receipt_Fact (PW)` | `good_receipt_fact` | Keeps the entity, removes visual noise from the diagram label |
+| `Goods_Issue_Fact (WZ)` | `goods_issue_fact` | Same entity, cleaner GitHub rendering |
+| `Machine_Labor_Dim` | `machine_rbh_rate_lookup` | Reflects the later design decision that this is a yearly machine-rate lookup, not a core star dimension |
+| `items_Dim` | `items_dim_history` | Makes the effective-dated nature of the item lookup visible in the public model |
 
 ```mermaid
-flowchart LR
-    subgraph LeftDims["Commercial / Shared Dimensions"]
-        D2["customer_dim"]
-        D3["items_dim"]
-        D1["date_dim"]
-    end
+erDiagram
+    CUSTOMER_DIM ||--o{ SALES_ORDER_FACT : "customer_key"
+    CUSTOMER_DIM ||--o{ OFFERS_FACT : "customer_key"
 
-    subgraph CenterFacts["Facts"]
-        F2["sales_order_fact"]
-        F4["good_receipt_fact"]
-        F3["goods_issue_fact"]
-        F1["offers_fact"]
-        F6["prod_order_routing_fact"]
-        F5["material_consumption_fact"]
-        F7["prod_registration_routing_fact"]
-    end
+    SALES_ORDER_DIM ||--o{ SALES_ORDER_FACT : "sales_order_key"
+    SALES_ORDER_DIM ||--o{ GOODS_ISSUE_FACT : "sales_order_key"
+    SALES_ORDER_DIM ||--o{ PROD_ORDER_ROUTING_FACT : "sales context"
+    SALES_ORDER_DIM ||--o{ PROD_REGISTRATION_ROUTING_FACT : "sales context"
 
-    subgraph RightDims["Production Dimensions"]
-        D4["sales_order_dim"]
-        D5["prod_order_dim"]
-        D6["machine_dim"]
-        D8["work_instruction_dim"]
-        D7["material_dim"]
-        D9["machine_labor_dim"]
-    end
+    ITEMS_DIM_HISTORY ||--o{ SALES_ORDER_FACT : "item_key"
+    ITEMS_DIM_HISTORY ||--o{ GOODS_ISSUE_FACT : "item_key"
+    ITEMS_DIM_HISTORY ||--o{ GOOD_RECEIPT_FACT : "item_key"
+    ITEMS_DIM_HISTORY ||--o{ OFFERS_FACT : "item_key"
+    ITEMS_DIM_HISTORY ||--o{ PROD_ORDER_ROUTING_FACT : "item_key"
+    ITEMS_DIM_HISTORY ||--o{ PROD_REGISTRATION_ROUTING_FACT : "item_key"
+    ITEMS_DIM_HISTORY ||--o{ MATERIAL_CONSUMPTION_FACT : "main item"
 
-    D2 --> F2
-    D2 --> F1
+    DATE_DIM ||--o{ SALES_ORDER_FACT : "document and promise dates"
+    DATE_DIM ||--o{ GOODS_ISSUE_FACT : "issue and delivery dates"
+    DATE_DIM ||--o{ GOOD_RECEIPT_FACT : "receipt dates"
+    DATE_DIM ||--o{ OFFERS_FACT : "offer dates"
+    DATE_DIM ||--o{ PROD_ORDER_ROUTING_FACT : "routing dates"
+    DATE_DIM ||--o{ PROD_REGISTRATION_ROUTING_FACT : "registration dates"
 
-    D3 --> F2
-    D3 --> F4
-    D3 --> F3
-    D3 --> F1
-    D3 --> F6
-    D3 --> F5
-    D3 --> F7
+    PROD_ORDER_DIM ||--o{ GOOD_RECEIPT_FACT : "prod_order_key"
+    PROD_ORDER_DIM ||--o{ MATERIAL_CONSUMPTION_FACT : "prod_order_key"
+    PROD_ORDER_DIM ||--o{ PROD_ORDER_ROUTING_FACT : "prod_order_key"
+    PROD_ORDER_DIM ||--o{ PROD_REGISTRATION_ROUTING_FACT : "prod_order_key"
 
-    D1 --> F2
-    D1 --> F4
-    D1 --> F3
-    D1 --> F1
-    D1 --> F6
-    D1 --> F7
+    MACHINE_DIM ||--o{ PROD_ORDER_ROUTING_FACT : "machine_key"
+    MACHINE_DIM ||--o{ PROD_REGISTRATION_ROUTING_FACT : "machine_key"
+    MACHINE_DIM ||--o{ MACHINE_RBH_RATE_LOOKUP : "1 machine to yearly rate"
 
-    F2 --> D4
-    F3 --> D4
-    F6 --> D4
-    F7 --> D4
+    WORK_INSTRUCTION_DIM ||--o{ PROD_ORDER_ROUTING_FACT : "work_instruction_key"
+    WORK_INSTRUCTION_DIM ||--o{ PROD_REGISTRATION_ROUTING_FACT : "work_instruction_key"
+    WORK_INSTRUCTION_DIM ||--o{ MATERIAL_CONSUMPTION_FACT : "work_instruction_key"
 
-    F4 --> D5
-    F5 --> D5
-    F6 --> D5
-    F7 --> D5
-
-    F6 --> D6
-    F7 --> D6
-
-    F5 --> D7
-
-    F5 --> D8
-    F6 --> D8
-    F7 --> D8
-
-    D6 --- D9
+    MATERIAL_DIM ||--o{ MATERIAL_CONSUMPTION_FACT : "material_key"
 ```
+
+This public view keeps the original draw.io intent:
+- one fact for sales order lines
+- one fact for WZ issue lines
+- one fact for PW receipts
+- separate production plan and production execution facts
+- a dedicated material consumption fact
+- shared dimensions across commercial, logistics, and production processes
+
+The main public simplifications are:
+- normalized naming for readability
+- `items_dim_history` shown as an effective-dated lookup instead of a plain snapshot dimension
+- `machine_rbh_rate_lookup` shown as a supporting lookup linked to `machine_dim`, not as a central reporting dimension
+- fact grain explained in prose rather than reproduced from every field in the original XML diagram
 
 ## Key Technical Decisions
 
@@ -292,3 +290,4 @@ The interesting part of the project was deciding:
 - and how to turn a set of operational systems into something that could actually support repeatable analysis.
 
 That is the part I would want to talk about in an interview: not just the code itself, but the tradeoffs, the modeling choices, and the reasoning behind them.
+
