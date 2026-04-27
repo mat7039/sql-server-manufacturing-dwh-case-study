@@ -84,7 +84,7 @@ flowchart LR
     subgraph Sources
         A1["Commercial / ERP Data"]
         A2["Manufacturing / MES Data"]
-        A3["Auxiliary Lookup Data"]
+        A3["Auxiliary Reference Data"]
     end
 
     A1 --> A
@@ -94,62 +94,70 @@ flowchart LR
 
 ## Star Schema View
 
-This is the simplified target shape I worked toward:
+This is the public, simplified view of the target model. I shaped it to stay close to the original warehouse diagram while still keeping the portfolio version readable:
 
 ```mermaid
-flowchart TB
-    F1["offers_fact"]
-    F2["sales_order_fact"]
-    F3["goods_issue_fact"]
-    F4["good_receipt_fact"]
-    F5["material_consumption_fact"]
-    F6["prod_order_routing_fact"]
-    F7["prod_registration_routing_fact"]
+flowchart LR
+    subgraph LeftDims["Commercial / Shared Dimensions"]
+        D2["customer_dim"]
+        D3["items_dim"]
+        D1["date_dim"]
+    end
 
-    D1["date_dim"]
-    D2["customer_dim"]
-    D3["items_dim"]
-    D4["sales_order_dim"]
-    D5["prod_order_dim"]
-    D6["machine_dim"]
-    D7["material_dim"]
-    D8["work_instruction_dim"]
-    D9["machine_rbh_rate_lookup_dim"]
+    subgraph CenterFacts["Facts"]
+        F2["sales_order_fact"]
+        F4["good_receipt_fact"]
+        F3["goods_issue_fact"]
+        F1["offers_fact"]
+        F6["prod_order_routing_fact"]
+        F5["material_consumption_fact"]
+        F7["prod_registration_routing_fact"]
+    end
 
-    F1 --> D1
-    F1 --> D2
-    F1 --> D3
+    subgraph RightDims["Production Dimensions"]
+        D4["sales_order_dim"]
+        D5["prod_order_dim"]
+        D6["machine_dim"]
+        D8["work_instruction_dim"]
+        D7["material_dim"]
+        D9["machine_labor_dim"]
+    end
 
-    F2 --> D1
-    F2 --> D2
-    F2 --> D3
+    D2 --> F2
+    D2 --> F1
+
+    D3 --> F2
+    D3 --> F4
+    D3 --> F3
+    D3 --> F1
+    D3 --> F6
+    D3 --> F5
+    D3 --> F7
+
+    D1 --> F2
+    D1 --> F4
+    D1 --> F3
+    D1 --> F1
+    D1 --> F6
+    D1 --> F7
+
     F2 --> D4
-
-    F3 --> D1
-    F3 --> D3
     F3 --> D4
-
-    F4 --> D1
-    F4 --> D3
-    F4 --> D5
-
-    F5 --> D3
-    F5 --> D5
-    F5 --> D7
-    F5 --> D8
-
-    F6 --> D1
-    F6 --> D3
     F6 --> D4
-    F6 --> D5
-    F6 --> D6
-    F6 --> D8
-
-    F7 --> D1
-    F7 --> D3
     F7 --> D4
+
+    F4 --> D5
+    F5 --> D5
+    F6 --> D5
     F7 --> D5
+
+    F6 --> D6
     F7 --> D6
+
+    F5 --> D7
+
+    F5 --> D8
+    F6 --> D8
     F7 --> D8
 
     D6 --- D9
@@ -273,20 +281,14 @@ The focus is on:
 - implementation approach
 - engineering judgment
 
-## Next Improvements for This Portfolio Repo
+## Why I Published This
 
-The best next additions would be:
-- one sanitized SCD1 SQL example
-- one sanitized SCD2 SQL example
-- one sanitized fact load example
-- one diagram showing validation and runtime control flow
+I wanted this repository to show more than isolated SQL queries.
 
-## Contact Angle for Recruiters
+The interesting part of the project was deciding:
+- what the grain of each dataset really was,
+- where history mattered and where it did not,
+- how to keep ETL stable with imperfect source data,
+- and how to turn a set of operational systems into something that could actually support repeatable analysis.
 
-If you are reviewing this repository as part of a data engineering, BI, analytics engineering, or SQL-focused role, the strongest parts to look at are:
-- dimensional modeling choices
-- the architecture sections
-- SCD decision reasoning
-- ETL orchestration and validation strategy
-
-This project is meant to show not only that I can write SQL, but that I can structure a warehouse so it is maintainable, explainable, and operationally usable.
+That is the part I would want to talk about in an interview: not just the code itself, but the tradeoffs, the modeling choices, and the reasoning behind them.
