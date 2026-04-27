@@ -94,17 +94,9 @@ flowchart LR
 
 ## Star Schema View
 
-The original `dwh.drawio` was a field-level warehouse sketch. For the public GitHub version I kept the same business entities, normalized a few names, and redrew the model in a recruiter-friendly way so it remains readable in Markdown.
+The target model is centered on separate commercial, logistics, and production fact tables connected through shared dimensions. This kept the warehouse practical for reporting while preserving the business grain of each operational process.
 
-Public naming is intentionally slightly cleaner than the source diagram:
-
-| Original draw.io label | Public README label | Why |
-| --- | --- | --- |
-| `custmer_Dim` | `customer_dim` | Fixes the typo without changing the business meaning |
-| `Good_Receipt_Fact (PW)` | `good_receipt_fact` | Keeps the entity, removes visual noise from the diagram label |
-| `Goods_Issue_Fact (WZ)` | `goods_issue_fact` | Same entity, cleaner GitHub rendering |
-| `Machine_Labor_Dim` | `machine_rbh_rate_lookup` | Reflects the later design decision that this is a yearly machine-rate lookup, not a core star dimension |
-| `items_Dim` | `items_dim_history` | Makes the effective-dated nature of the item lookup visible in the public model |
+The diagram below highlights the analytical shape of the model rather than every physical column. The important idea is that sales, shipping, production execution, and material usage are modeled as separate processes, but they can still be analyzed together through common dimensions.
 
 ```mermaid
 erDiagram
@@ -147,19 +139,20 @@ erDiagram
     MATERIAL_DIM ||--o{ MATERIAL_CONSUMPTION_FACT : "material_key"
 ```
 
-This public view keeps the original draw.io intent:
-- one fact for sales order lines
-- one fact for WZ issue lines
-- one fact for PW receipts
-- separate production plan and production execution facts
-- a dedicated material consumption fact
-- shared dimensions across commercial, logistics, and production processes
+Key modeling choices:
+- `sales_order_fact` is kept at sales order line grain.
+- `goods_issue_fact` represents shipment issue lines (`WZ`).
+- `good_receipt_fact` represents production receipt events (`PW`).
+- `prod_order_routing_fact` and `prod_registration_routing_fact` intentionally separate production plan from production execution.
+- `material_consumption_fact` isolates material usage as its own analytical process.
+- shared dimensions make it possible to analyze customer demand, item flow, production activity, and material usage in one reporting model.
 
-The main public simplifications are:
-- normalized naming for readability
-- `items_dim_history` shown as an effective-dated lookup instead of a plain snapshot dimension
-- `machine_rbh_rate_lookup` shown as a supporting lookup linked to `machine_dim`, not as a central reporting dimension
-- fact grain explained in prose rather than reproduced from every field in the original XML diagram
+Dimension behavior:
+- `customer_dim`, `date_dim`, `prod_order_dim`, and `machine_dim` provide reusable reporting context across processes.
+- `sales_order_dim` captures document-level commercial attributes separately from sales line facts.
+- `items_dim_history` reflects effective-dated item attributes where historical interpretation matters.
+- `work_instruction_dim` preserves production instruction context independently from execution facts.
+- `machine_rbh_rate_lookup` is a supporting rate lookup tied to machines rather than a central reporting fact.
 
 ## Key Technical Decisions
 
@@ -290,4 +283,5 @@ The interesting part of the project was deciding:
 - and how to turn a set of operational systems into something that could actually support repeatable analysis.
 
 That is the part I would want to talk about in an interview: not just the code itself, but the tradeoffs, the modeling choices, and the reasoning behind them.
+
 
