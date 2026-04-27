@@ -94,65 +94,66 @@ flowchart LR
 
 ## Star Schema View
 
-The target model is centered on separate commercial, logistics, and production fact tables connected through shared dimensions. This kept the warehouse practical for reporting while preserving the business grain of each operational process.
-
-The diagram below highlights the analytical shape of the model rather than every physical column. The important idea is that sales, shipping, production execution, and material usage are modeled as separate processes, but they can still be analyzed together through common dimensions.
+This is the simplified target shape I worked toward:
 
 ```mermaid
-erDiagram
-    CUSTOMER_DIM ||--o{ SALES_ORDER_FACT : "customer_key"
-    CUSTOMER_DIM ||--o{ OFFERS_FACT : "customer_key"
+flowchart TB
+    F1["offers_fact"]
+    F2["sales_order_fact"]
+    F3["goods_issue_fact"]
+    F4["good_receipt_fact"]
+    F5["material_consumption_fact"]
+    F6["prod_order_routing_fact"]
+    F7["prod_registration_routing_fact"]
 
-    SALES_ORDER_DIM ||--o{ SALES_ORDER_FACT : "sales_order_key"
-    SALES_ORDER_DIM ||--o{ GOODS_ISSUE_FACT : "sales_order_key"
-    SALES_ORDER_DIM ||--o{ PROD_ORDER_ROUTING_FACT : "sales context"
-    SALES_ORDER_DIM ||--o{ PROD_REGISTRATION_ROUTING_FACT : "sales context"
+    D1["date_dim"]
+    D2["customer_dim"]
+    D3["items_dim"]
+    D4["sales_order_dim"]
+    D5["prod_order_dim"]
+    D6["machine_dim"]
+    D7["material_dim"]
+    D8["work_instruction_dim"]
+    D9["machine_labor_dim"]
 
-    ITEMS_DIM_HISTORY ||--o{ SALES_ORDER_FACT : "item_key"
-    ITEMS_DIM_HISTORY ||--o{ GOODS_ISSUE_FACT : "item_key"
-    ITEMS_DIM_HISTORY ||--o{ GOOD_RECEIPT_FACT : "item_key"
-    ITEMS_DIM_HISTORY ||--o{ OFFERS_FACT : "item_key"
-    ITEMS_DIM_HISTORY ||--o{ PROD_ORDER_ROUTING_FACT : "item_key"
-    ITEMS_DIM_HISTORY ||--o{ PROD_REGISTRATION_ROUTING_FACT : "item_key"
-    ITEMS_DIM_HISTORY ||--o{ MATERIAL_CONSUMPTION_FACT : "main item"
+    F1 --> D1
+    F1 --> D2
+    F1 --> D3
 
-    DATE_DIM ||--o{ SALES_ORDER_FACT : "document and promise dates"
-    DATE_DIM ||--o{ GOODS_ISSUE_FACT : "issue and delivery dates"
-    DATE_DIM ||--o{ GOOD_RECEIPT_FACT : "receipt dates"
-    DATE_DIM ||--o{ OFFERS_FACT : "offer dates"
-    DATE_DIM ||--o{ PROD_ORDER_ROUTING_FACT : "routing dates"
-    DATE_DIM ||--o{ PROD_REGISTRATION_ROUTING_FACT : "registration dates"
+    F2 --> D1
+    F2 --> D2
+    F2 --> D3
+    F2 --> D4
 
-    PROD_ORDER_DIM ||--o{ GOOD_RECEIPT_FACT : "prod_order_key"
-    PROD_ORDER_DIM ||--o{ MATERIAL_CONSUMPTION_FACT : "prod_order_key"
-    PROD_ORDER_DIM ||--o{ PROD_ORDER_ROUTING_FACT : "prod_order_key"
-    PROD_ORDER_DIM ||--o{ PROD_REGISTRATION_ROUTING_FACT : "prod_order_key"
+    F3 --> D1
+    F3 --> D3
+    F3 --> D4
 
-    MACHINE_DIM ||--o{ PROD_ORDER_ROUTING_FACT : "machine_key"
-    MACHINE_DIM ||--o{ PROD_REGISTRATION_ROUTING_FACT : "machine_key"
-    MACHINE_DIM ||--o{ MACHINE_RBH_RATE_LOOKUP : "1 machine to yearly rate"
+    F4 --> D1
+    F4 --> D3
+    F4 --> D5
 
-    WORK_INSTRUCTION_DIM ||--o{ PROD_ORDER_ROUTING_FACT : "work_instruction_key"
-    WORK_INSTRUCTION_DIM ||--o{ PROD_REGISTRATION_ROUTING_FACT : "work_instruction_key"
-    WORK_INSTRUCTION_DIM ||--o{ MATERIAL_CONSUMPTION_FACT : "work_instruction_key"
+    F5 --> D3
+    F5 --> D5
+    F5 --> D7
+    F5 --> D8
 
-    MATERIAL_DIM ||--o{ MATERIAL_CONSUMPTION_FACT : "material_key"
+    F6 --> D1
+    F6 --> D3
+    F6 --> D4
+    F6 --> D5
+    F6 --> D6
+    F6 --> D8
+
+    F7 --> D1
+    F7 --> D3
+    F7 --> D4
+    F7 --> D5
+    F7 --> D6
+    F7 --> D8
+
+    D6 --- D9
 ```
-
-Key modeling choices:
-- `sales_order_fact` is kept at sales order line grain.
-- `goods_issue_fact` represents shipment issue lines (`WZ`).
-- `good_receipt_fact` represents production receipt events (`PW`).
-- `prod_order_routing_fact` and `prod_registration_routing_fact` intentionally separate production plan from production execution.
-- `material_consumption_fact` isolates material usage as its own analytical process.
-- shared dimensions make it possible to analyze customer demand, item flow, production activity, and material usage in one reporting model.
-
-Dimension behavior:
-- `customer_dim`, `date_dim`, `prod_order_dim`, and `machine_dim` provide reusable reporting context across processes.
-- `sales_order_dim` captures document-level commercial attributes separately from sales line facts.
-- `items_dim_history` reflects effective-dated item attributes where historical interpretation matters.
-- `work_instruction_dim` preserves production instruction context independently from execution facts.
-- `machine_rbh_rate_lookup` is a supporting rate lookup tied to machines rather than a central reporting fact.
 
 ## Key Technical Decisions
 
