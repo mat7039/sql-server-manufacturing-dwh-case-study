@@ -94,7 +94,7 @@ flowchart LR
 
 ## Star Schema View
 
-This is the simplified target shape I worked toward:
+This is the simplified target shape I worked toward: (full architecture of a schema with detailed columns is available in dwh.drawio file in repo)
 
 ```mermaid
 flowchart TB
