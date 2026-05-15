@@ -1,58 +1,30 @@
-﻿# SQL Server Manufacturing DWH Case Study
+# SQL Server Manufacturing DWH Case Study
 
-End-to-end case study of designing and implementing a SQL Server data warehouse for manufacturing and commercial analytics.
+This repository is a cleaned-up version of a real SQL Server data warehouse project I built around manufacturing and commercial data.
 
-This repository is a sanitized portfolio version of a real project I built from scratch to turn operational SQL Server data into a stable analytical model with:
-- staging extracts
-- SCD1 and SCD2 dimensions
-- conformed fact tables
-- SQL Agent orchestration
-- lightweight production validation
+The main goal was to take operational data that was useful only to people who already knew the systems very well and turn it into something that could be queried and reported in a more stable, repeatable way. The hard part was not writing one good SQL query. It was figuring out grain, deciding where history mattered, separating source logic from analytical logic, and making the whole thing dependable enough to refresh every day.
 
-## Project Summary
-
-The core challenge was not just writing SQL queries. It was designing a warehouse that could sit between imperfect operational systems and repeatable business reporting.
-
-The source landscape contained:
-- multiple operational domains
-- mixed snapshot and historical logic
-- inconsistent business naming
-- ambiguous grain in some production datasets
-- both current-state and time-aware entities
-
-The solution was a layered SQL Server warehouse:
+I built the warehouse in a simple layered form:
 - `stg` for source-aligned extracts
-- `dwh` for dimensional modeling
-- controlled ETL with validation and scheduled refresh
+- `dwh` for dimensions and facts
+- SQL Agent jobs for scheduled refresh
+- lightweight validation between extract and transform
 
-## What I Implemented
+The source data came from a mix of commercial and production systems, so a lot of the work was around dealing with mismatched naming, mixed current-state and historical data, and business processes that looked simple until you tried to model them consistently.
 
-### Staging layer
+## What is in the model
 
-- source-aligned staging tables
-- full reload extract pattern
-- historical staging where source versioning existed
-- technical metadata for ETL traceability
-
-### Dimensions
-
-- SCD1 dimensions where current state was sufficient
-- SCD2 dimensions where time-aware business interpretation mattered
-- surrogate keys
-- unknown rows for resilient fact loading
-
-Examples:
+On the dimension side, the project includes things like:
 - `date_dim`
 - `customer_dim`
+- `items_dim`
+- `sales_order_dim`
 - `prod_order_dim`
 - `machine_dim`
 - `material_dim`
-- `sales_order_dim`
 - `work_instruction_dim`
-- `items_dim`
 
-### Facts
-
+On the fact side, it includes:
 - offers
 - sales orders
 - goods issue
@@ -61,16 +33,9 @@ Examples:
 - production routing plan
 - production routing registrations
 
-### ETL and operations
-
-- SQL Agent orchestration
-- extract / validate / transform flow
-- lightweight validator with persistent run logging
-- controlled fallback behavior for missing dimension matches
+Some dimensions are handled as current-state only. Some use SCD2. That choice was not made mechanically. It depended on whether the history actually mattered in analysis and whether the source-side versioning was usable enough to trust.
 
 ## Architecture
-
-The warehouse followed a simple, production-friendly architecture:
 
 ```mermaid
 flowchart LR
@@ -92,9 +57,9 @@ flowchart LR
     A3 --> A
 ```
 
-## Star Schema View
+## Simplified schema view
 
-This is the simplified target shape I worked toward: (full architecture of a schema with detailed columns is available in dwh.drawio file in repo)
+This is a simplified view of the target shape. The full working model was more detailed, but this is the general structure I worked toward.
 
 ```mermaid
 flowchart TB
@@ -155,93 +120,34 @@ flowchart TB
     D6 --- D9
 ```
 
-## Key Technical Decisions
+## How the ETL works
 
-### 1. Separate `stg` and `dwh`
+The refresh is split into a few simple steps:
 
-I deliberately separated:
-- source-shaped extraction
-- business-shaped dimensional modeling
+1. truncate staging
+2. load staging
+3. validate staging
+4. transform dimensions
+5. transform facts
 
-This made it easier to:
-- debug source issues
-- preserve raw logic before transformation
-- change dimensional behavior without rewriting extracts
+That may not be the fanciest setup, but it is easy to understand, easy to debug, and good enough for a practical first production version.
 
-### 2. Use SCD selectively, not blindly
+## What I wanted to solve well
 
-I mixed `SCD1` and `SCD2` based on actual business value.
+A few things mattered more than everything else:
+- keeping source-shaped extraction separate from business-shaped modeling
+- choosing the right grain for facts instead of forcing one too early
+- being careful with historical lookups where dates actually matter
+- making the warehouse resilient when source data is messy
+- avoiding one-off report SQL every time the same business question came back
 
-For example:
-- some dimensions needed only current business state
-- some had meaningful business history
-- some source histories had to be compressed because technical versioning was noisier than analytical change
+I also tried to keep the model practical. When a simple solution was enough, I used the simple solution. When a dimension really needed historical behavior, I modeled it that way. I was not trying to build the most complex warehouse possible, just one that would actually hold up in day-to-day use.
 
-### 3. Keep the model resilient
+## SQL examples
 
-I used:
-- surrogate keys
-- unknown dimension rows
-- fallback matching logic
-- validation before transform
+The `sql_examples` folder contains short, sanitized examples that reflect the style of the implementation without exposing full production scripts.
 
-That kept the pipeline stable even when source data was imperfect.
-
-### 4. Prefer practical orchestration first
-
-Instead of starting with a large orchestration framework, I used:
-- SQL Server Agent
-- procedural ETL steps
-- validation gates
-
-This was the right tradeoff for a first production-ready version.
-
-## ETL Flow
-
-The pipeline was orchestrated as:
-
-1. `TRUNCATE_STG`
-2. `LOAD_STG`
-3. `VALIDATE_STG`
-4. `TRANSFORM_DIMS`
-5. `TRANSFORM_FACTS`
-
-This structure gave:
-- simple scheduling
-- easy run diagnostics
-- a clear stop point before loading facts if staging validation failed
-
-## Data Quality Approach
-
-The project included a lightweight validator checking:
-- row counts
-- missing required business keys
-- invalid date ranges
-- unexpected duplicates in selected staging objects
-
-Validation was treated as part of runtime operations, not just ad hoc development work.
-
-## Representative Challenges Solved
-
-- aligning current-state and historical entities
-- choosing correct business grain for production facts
-- handling customer naming mismatches across systems
-- designing machine history as business SCD2 rather than raw technical versioning
-- preserving item and material lookups on correct historical timelines
-- keeping ETL stable with unknown rows and validation checkpoints
-
-## What This Repository Demonstrates
-
-This repository is intended to show that I can:
-- analyze transactional SQL Server source systems
-- define business grain
-- design dimensional models
-- implement SCD1 and SCD2 logic
-- build fact loads with surrogate key lookups
-- add validation and operational controls
-- make pragmatic tradeoffs instead of overengineering
-
-## Repository Guide
+## Repository guide
 
 - [`docs/01-business-problem.md`](./docs/01-business-problem.md)
 - [`docs/02-source-systems.md`](./docs/02-source-systems.md)
@@ -254,35 +160,20 @@ This repository is intended to show that I can:
 - [`docs/09-what-was-redacted.md`](./docs/09-what-was-redacted.md)
 - [`sql_examples/README.md`](./sql_examples/README.md)
 
-## What Is Intentionally Redacted
+## What is intentionally left out
 
-This is a public portfolio artifact, not an internal company backup.
+This is a public portfolio version, so I left out anything that would effectively turn it into an internal company backup.
 
-I intentionally excluded:
-- real company names
-- production connection details
-- internal server and schema names
-- full sensitive production SQL
-- customer-specific mapping rules
-- proprietary business calculations
+That includes:
+- real connection details
+- full production procedures
+- customer-specific cleanup rules
+- internal naming that would add no value outside the company
 
-The focus is on:
-- architecture
-- modeling decisions
-- ETL strategy
-- implementation approach
-- engineering judgment
+What I wanted to keep visible is the part that actually shows the work: the structure of the warehouse, the ETL approach, the modeling decisions, and the tradeoffs behind them.
 
-## Why I Published This
+## Why this repo exists
 
-I wanted this repository to show more than isolated SQL queries.
+I wanted one place that shows how I think about warehouse work end to end.
 
-The interesting part of the project was deciding:
-- what the grain of each dataset really was,
-- where history mattered and where it did not,
-- how to keep ETL stable with imperfect source data,
-- and how to turn a set of operational systems into something that could actually support repeatable analysis.
-
-That is the part I would want to talk about in an interview: not just the code itself, but the tradeoffs, the modeling choices, and the reasoning behind them.
-
-
+Not just SQL syntax, but how I approach source systems, where I draw boundaries between staging and DWH, how I deal with history, and how I make the final model usable enough that reporting does not turn back into a collection of ad hoc queries.

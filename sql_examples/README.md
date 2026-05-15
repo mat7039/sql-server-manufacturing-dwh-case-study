@@ -1,13 +1,10 @@
 # SQL Examples
 
-This folder contains sanitized, representative SQL patterns from the project.
+This folder has a few short SQL examples that reflect the kind of patterns used in the project.
 
-Included examples:
-- `scd2_dimension_example.sql`: forward-only SCD2 dimension change handling
-- `fact_load_with_date_lookup.sql`: fact load with surrogate key resolution and date-range lookup
-- `manual_mapping_lookup_example.sql`: manual business mapping through a curated lookup table
+They are not copied production scripts. The idea is just to show the general shape of the work:
+- one example of SCD2 handling
+- one example of fact loading with date-based lookups
+- one example of a manual business mapping table used in reporting logic
 
-Recommended exclusions:
-- full production scripts
-- sensitive naming
-- customer-specific cleanup logic
+I kept them short on purpose. I wanted them to be readable in a few minutes and useful as a quick sample, not as a dump of internal project code.
