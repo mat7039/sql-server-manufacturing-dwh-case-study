@@ -1,12 +1,11 @@
 # SQL Examples
 
-This folder is intended for sanitized, representative SQL examples only.
+This folder contains sanitized, representative SQL patterns from the project.
 
-Recommended content:
-- one SCD1 dimension pattern
-- one SCD2 dimension pattern
-- one fact load with surrogate key lookups
-- one lightweight validation procedure
+Included examples:
+- `scd2_dimension_example.sql`: forward-only SCD2 dimension change handling
+- `fact_load_with_date_lookup.sql`: fact load with surrogate key resolution and date-range lookup
+- `manual_mapping_lookup_example.sql`: manual business mapping through a curated lookup table
 
 Recommended exclusions:
 - full production scripts
