@@ -1,179 +1,99 @@
-# SQL Server Manufacturing DWH Case Study
+# Manufacturing Data Platform Case Study
 
-This repository is a cleaned-up version of a real SQL Server data warehouse project I built around manufacturing and commercial data.
+This repository shows one larger data project that I built in stages, not three unrelated demos.
 
-The main goal was to take operational data that was useful only to people who already knew the systems very well and turn it into something that could be queried and reported in a more stable, repeatable way. The hard part was not writing one good SQL query. It was figuring out grain, deciding where history mattered, separating source logic from analytical logic, and making the whole thing dependable enough to refresh every day.
+It started with a SQL Server warehouse for manufacturing and commercial data. Then I added a replication layer into Snowflake so the analytical model could live outside the on-prem environment. The next step is a Streamlit application on top of that replicated layer.
 
-I built the warehouse in a simple layered form:
-- `stg` for source-aligned extracts
-- `dwh` for dimensions and facts
-- SQL Agent jobs for scheduled refresh
-- lightweight validation between extract and transform
+I like presenting it this way because it reflects the real work better. First I had to make the data model usable. Then I had to make it portable. Only after that did it make sense to think about an application.
 
-The source data came from a mix of commercial and production systems, so a lot of the work was around dealing with mismatched naming, mixed current-state and historical data, and business processes that looked simple until you tried to model them consistently.
+## Project goal
 
-## What is in the model
+The core problem was simple to describe and harder to solve well.
 
-On the dimension side, the project includes things like:
-- `date_dim`
-- `customer_dim`
-- `items_dim`
-- `sales_order_dim`
-- `prod_order_dim`
-- `machine_dim`
-- `material_dim`
-- `work_instruction_dim`
+There was a lot of useful operational data, but most analysis still depended on local knowledge of source systems and ad hoc SQL. I wanted to turn that into something more stable:
 
-On the fact side, it includes:
-- offers
-- sales orders
-- goods issue
-- goods receipt
-- material consumption
-- production routing plan
-- production routing registrations
+- a warehouse with clear grain and repeatable refreshes
+- a cloud-replicated analytical layer that is easy to operate
+- and, in the next phase, an application that makes the data easier to consume
 
-Some dimensions are handled as current-state only. Some use SCD2. That choice was not made mechanically. It depended on whether the history actually mattered in analysis and whether the source-side versioning was usable enough to trust.
+## The project in 3 parts
 
-## Architecture
+### 1. SQL Server DWH
+
+This part covers the warehouse itself:
+- source-aligned staging
+- dimensions and facts
+- ETL orchestration
+- validation
+- practical modeling decisions around history, grain, and messy source data
+
+Start here:
+- [`sql_server_dwh/README.md`](./sql_server_dwh/README.md)
+
+### 2. Snowflake replication
+
+This part covers the replication of the warehouse into Snowflake:
+- snapshot export from SQL Server
+- internal stage layout
+- `COPY INTO` loading pattern
+- refresh procedure
+- key-pair authentication
+- local automation for export, upload, and refresh
+
+Start here:
+- [`snowflake_replication/README.md`](./snowflake_replication/README.md)
+
+### 3. Streamlit app
+
+This is the application layer that sits on top of Snowflake. It is the last step in the same story: taking a modeled and replicated data layer and turning it into something business-facing.
+
+Current placeholder:
+- [`streamlit_app/README.md`](./streamlit_app/README.md)
+
+## End-to-end architecture
 
 ```mermaid
 flowchart LR
-    A["Operational Sources"] --> B["stg Extract Layer"]
-    B --> C["Validation Layer"]
-    C --> D["dwh Dimensions"]
-    C --> E["dwh Facts"]
-    D --> E
-    E --> F["Reporting / Analysis"]
-
-    subgraph Sources
-        A1["Commercial / ERP Data"]
-        A2["Manufacturing / MES Data"]
-        A3["Auxiliary Reference Data"]
-    end
-
-    A1 --> A
-    A2 --> A
-    A3 --> A
+    A["Operational systems"] --> B["SQL Server DWH"]
+    B --> C["Snapshot export"]
+    C --> D["Snowflake internal stage"]
+    D --> E["Snowflake replicated layer"]
+    E --> F["Streamlit application"]
 ```
 
-## Simplified schema view
+## What this repo is meant to show
 
-This is a simplified view of the target shape. The full working model was more detailed, but this is the general structure I worked toward.
+This is not a "look, I know how to write one good SQL query" project.
 
-```mermaid
-flowchart TB
-    F1["offers_fact"]
-    F2["sales_order_fact"]
-    F3["goods_issue_fact"]
-    F4["good_receipt_fact"]
-    F5["material_consumption_fact"]
-    F6["prod_order_routing_fact"]
-    F7["prod_registration_routing_fact"]
+What I actually wanted this repository to show is:
+- how I think about turning source data into an analytical model
+- how I make tradeoffs when the clean textbook option is not the best practical one
+- how I move from on-prem data infrastructure into a cloud analytical layer
+- and how those backend decisions connect to a user-facing application later on
 
-    D1["date_dim"]
-    D2["customer_dim"]
-    D3["items_dim"]
-    D4["sales_order_dim"]
-    D5["prod_order_dim"]
-    D6["machine_dim"]
-    D7["material_dim"]
-    D8["work_instruction_dim"]
-    D9["machine_labor_dim"]
+## Repository structure
 
-    F1 --> D1
-    F1 --> D2
-    F1 --> D3
+- [`architecture/`](./architecture/)
+  Diagrams and model visuals.
+- [`sql_server_dwh/`](./sql_server_dwh/)
+  The warehouse subproject.
+- [`snowflake_replication/`](./snowflake_replication/)
+  The replication and automation subproject.
+- [`streamlit_app/`](./streamlit_app/)
+  The planned application subproject.
+- [`docs/`](./docs/)
+  Supporting warehouse documentation from the original case study.
+- [`sql_examples/`](./sql_examples/)
+  Sanitized SQL examples from the warehouse work.
 
-    F2 --> D1
-    F2 --> D2
-    F2 --> D3
-    F2 --> D4
+## A note on the public version
 
-    F3 --> D1
-    F3 --> D3
-    F3 --> D4
+This is a portfolio version, so I am intentionally leaving out anything that would turn it into a copy of an internal company environment.
 
-    F4 --> D1
-    F4 --> D3
-    F4 --> D5
+That means no real connection details, no full production procedures, and no company-specific cleanup rules that would not teach anything useful outside the original setting.
 
-    F5 --> D3
-    F5 --> D5
-    F5 --> D7
-    F5 --> D8
-
-    F6 --> D1
-    F6 --> D3
-    F6 --> D4
-    F6 --> D5
-    F6 --> D6
-    F6 --> D8
-
-    F7 --> D1
-    F7 --> D3
-    F7 --> D4
-    F7 --> D5
-    F7 --> D6
-    F7 --> D8
-
-    D6 --- D9
-```
-
-## How the ETL works
-
-The refresh is split into a few simple steps:
-
-1. truncate staging
-2. load staging
-3. validate staging
-4. transform dimensions
-5. transform facts
-
-That may not be the fanciest setup, but it is easy to understand, easy to debug, and good enough for a practical first production version.
-
-## What I wanted to solve well
-
-A few things mattered more than everything else:
-- keeping source-shaped extraction separate from business-shaped modeling
-- choosing the right grain for facts instead of forcing one too early
-- being careful with historical lookups where dates actually matter
-- making the warehouse resilient when source data is messy
-- avoiding one-off report SQL every time the same business question came back
-
-I also tried to keep the model practical. When a simple solution was enough, I used the simple solution. When a dimension really needed historical behavior, I modeled it that way. I was not trying to build the most complex warehouse possible, just one that would actually hold up in day-to-day use.
-
-## SQL examples
-
-The `sql_examples` folder contains short, sanitized examples that reflect the style of the implementation without exposing full production scripts.
-
-## Repository guide
-
-- [`docs/01-business-problem.md`](./docs/01-business-problem.md)
-- [`docs/02-source-systems.md`](./docs/02-source-systems.md)
-- [`docs/03-architecture.md`](./docs/03-architecture.md)
-- [`docs/04-dimensional-model.md`](./docs/04-dimensional-model.md)
-- [`docs/05-etl-orchestration.md`](./docs/05-etl-orchestration.md)
-- [`docs/06-data-quality-and-validation.md`](./docs/06-data-quality-and-validation.md)
-- [`docs/07-scd-decisions.md`](./docs/07-scd-decisions.md)
-- [`docs/08-lessons-learned.md`](./docs/08-lessons-learned.md)
-- [`docs/09-what-was-redacted.md`](./docs/09-what-was-redacted.md)
-- [`sql_examples/README.md`](./sql_examples/README.md)
-
-## What is intentionally left out
-
-This is a public portfolio version, so I left out anything that would effectively turn it into an internal company backup.
-
-That includes:
-- real connection details
-- full production procedures
-- customer-specific cleanup rules
-- internal naming that would add no value outside the company
-
-What I wanted to keep visible is the part that actually shows the work: the structure of the warehouse, the ETL approach, the modeling decisions, and the tradeoffs behind them.
-
-## Why this repo exists
-
-I wanted one place that shows how I think about warehouse work end to end.
-
-Not just SQL syntax, but how I approach source systems, where I draw boundaries between staging and DWH, how I deal with history, and how I make the final model usable enough that reporting does not turn back into a collection of ad hoc queries.
+What I am trying to keep visible is the part that matters for engineering review:
+- structure
+- decisions
+- tradeoffs
+- and how the project evolved from a warehouse into a broader data platform
