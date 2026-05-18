@@ -83,8 +83,10 @@ What I actually wanted this repository to show is:
   The planned application subproject.
 - [`docs/`](./docs/)
   Supporting warehouse documentation from the original case study.
-- [`sql_examples/`](./sql_examples/)
-  Sanitized SQL examples from the warehouse work.
+- SQL examples now live inside the subprojects where they belong:
+  - [`sql_server_dwh/sql_examples/`](./sql_server_dwh/sql_examples/)
+  - [`snowflake_replication/sql_examples/`](./snowflake_replication/sql_examples/)
+  - [`streamlit_app/sql_examples/`](./streamlit_app/sql_examples/)
 
 ## A note on the public version
 
