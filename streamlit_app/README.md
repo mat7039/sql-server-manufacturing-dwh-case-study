@@ -64,6 +64,23 @@ The safer version was:
 - cache it without TTL
 - do the rest of the shaping in Python
 
+That was only part of the solution, though.
+
+I also decided to treat cost protection as part of the application design:
+- use a dedicated `XS` warehouse for the app
+- keep `AUTO_SUSPEND = 60`
+- add `.streamlit/config.toml` with a short sleep timeout:
+
+```toml
+[snowflake]
+[snowflake.sleep]
+streamlitSleepTimeoutMinutes = 5
+```
+
+The goal was simple: if someone opened the app, left the browser tab open, and walked away for a few hours or overnight, the application should not quietly generate unnecessary Snowflake cost.
+
+This was one of the most practical lessons in the whole project. In Snowflake Streamlit, idle behavior is not just an infrastructure setting. It is part of responsible app design.
+
 ### The app was only as good as the SQL underneath it
 
 The biggest frontend lesson was that Streamlit would not rescue unstable semantics.
@@ -128,6 +145,7 @@ A few things became very clear while building this layer:
 - SQL-first architecture was the right choice here.
 - Manual deployment was acceptable for the first working version.
 - A simple app with clear semantics is more valuable than a prettier app with shaky logic.
+- Cost optimization needs to be treated as part of the product, not as an afterthought.
 
 I also learned that this layer adds value even when the numbers are uncomfortable. In a few cases, the app helped surface source-data issues rather than just present polished KPIs. That is a good outcome, not a failure.
 
