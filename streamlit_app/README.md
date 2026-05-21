@@ -123,19 +123,33 @@ The point here is not the syntax itself. The point is the design choice:
 - one cached load into the app
 - lightweight Python afterward
 
-The second pattern that mattered was interactive drill-down without building a separate navigation system:
+I did not want to overload this README with more implementation fragments. The rest of the short code samples live in:
+- [`./code_examples/README.md`](./code_examples/README.md)
 
-```python
-event = st.dataframe(
-    focus_df,
-    use_container_width=True,
-    hide_index=True,
-    selection_mode="single-row",
-    on_select="rerun",
-)
-```
+## Example visuals
 
-That made it possible to keep the app simple while still supporting case-study style analysis inside the same screen.
+For this layer, screenshots are honestly more useful than another long code block.
+
+The screenshots now live in:
+- [`./images/README.md`](./images/README.md)
+
+### Pareto view
+
+This screen helps surface which clients contribute the most to the overall variance, instead of treating all cases as equally important.
+
+![Pareto view](./images/pareto.png)
+
+### Customer variance view
+
+This section is useful when the goal is to see where the biggest time or cost overruns are concentrated across the customer base.
+
+![Customer variance view](./images/variances.png)
+
+### Case study view
+
+This is the most detailed part of the app. It lets the user pick one specific case and compare the technological, actual, and quoted versions side by side.
+
+![Case study view](./images/interactiveCaseStudy.png)
 
 ## What I learned
 
