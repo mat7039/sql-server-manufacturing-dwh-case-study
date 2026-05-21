@@ -2,7 +2,7 @@
 
 This repository shows one larger data project that I built in stages, not three unrelated demos.
 
-It started with a SQL Server warehouse for manufacturing and commercial data. Then I added a replication layer into Snowflake so the analytical model could live outside the on-prem environment. The next step is a Streamlit application on top of that replicated layer.
+It started with a SQL Server warehouse for manufacturing and commercial data. Then I added a replication layer into Snowflake so the analytical model could live outside the on-prem environment. The last layer was a Streamlit application on top of that replicated model.
 
 I like presenting it this way because it reflects the real work better. First I had to make the data model usable. Then I had to make it portable. Only after that did it make sense to think about an application.
 
@@ -14,7 +14,7 @@ There was a lot of useful operational data, but most analysis still depended on 
 
 - a warehouse with clear grain and repeatable refreshes
 - a cloud-replicated analytical layer that is easy to operate
-- and, in the next phase, an application that makes the data easier to consume
+- and an application layer that makes the data easier to consume
 
 ## The project in 3 parts
 
@@ -47,7 +47,7 @@ Start here:
 
 This is the application layer that sits on top of Snowflake. It is the last step in the same story: taking a modeled and replicated data layer and turning it into something business-facing.
 
-Current placeholder:
+Start here:
 - [`streamlit_app/README.md`](./streamlit_app/README.md)
 
 ## End-to-end architecture
@@ -80,13 +80,13 @@ What I actually wanted this repository to show is:
 - [`snowflake_replication/`](./snowflake_replication/)
   The replication and automation subproject.
 - [`streamlit_app/`](./streamlit_app/)
-  The planned application subproject.
+  The Streamlit application subproject.
 - [`docs/`](./docs/)
-  Supporting warehouse documentation from the original case study.
-- SQL examples now live inside the subprojects where they belong:
+  One deeper background note about the original warehouse design and implementation.
+- Examples now live inside the subprojects where they belong:
   - [`sql_server_dwh/sql_examples/`](./sql_server_dwh/sql_examples/)
   - [`snowflake_replication/sql_examples/`](./snowflake_replication/sql_examples/)
-  - [`streamlit_app/sql_examples/`](./streamlit_app/sql_examples/)
+  - [`streamlit_app/code_examples/`](./streamlit_app/code_examples/)
 
 ## A note on the public version
 

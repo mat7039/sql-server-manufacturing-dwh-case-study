@@ -4,7 +4,7 @@ This is the first subproject in the larger manufacturing data platform case stud
 
 It is the part where the warehouse itself was designed and implemented in SQL Server. The Snowflake and application work came later, but this layer had to exist first and had to be stable enough to trust.
 
-Most of the supporting documentation for this subproject is still in the top-level `docs/` folder. That is simply because this repository originally started as a warehouse-only case study, and I decided to preserve that work instead of rewriting everything just to make the folder tree look cleaner.
+There is also one supporting note in the top-level `docs/` folder. I kept it as a single background document instead of scattering the same story across many tiny markdown files.
 
 The text below is the original warehouse case study, with only light edits so it fits into the broader platform story.
 
@@ -155,15 +155,7 @@ I also tried to keep the model practical. When a simple solution was enough, I u
 
 ## Supporting files
 
-- [`../docs/01-business-problem.md`](../docs/01-business-problem.md)
-- [`../docs/02-source-systems.md`](../docs/02-source-systems.md)
-- [`../docs/03-architecture.md`](../docs/03-architecture.md)
-- [`../docs/04-dimensional-model.md`](../docs/04-dimensional-model.md)
-- [`../docs/05-etl-orchestration.md`](../docs/05-etl-orchestration.md)
-- [`../docs/06-data-quality-and-validation.md`](../docs/06-data-quality-and-validation.md)
-- [`../docs/07-scd-decisions.md`](../docs/07-scd-decisions.md)
-- [`../docs/08-lessons-learned.md`](../docs/08-lessons-learned.md)
-- [`../docs/09-what-was-redacted.md`](../docs/09-what-was-redacted.md)
+- [`../docs/warehouse-design-notes.md`](../docs/warehouse-design-notes.md)
 - [`./sql_examples/README.md`](./sql_examples/README.md)
 
 ## What is intentionally left out
